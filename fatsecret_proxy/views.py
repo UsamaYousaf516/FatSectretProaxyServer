@@ -57,7 +57,7 @@ def fatsecret_proxy(request, method_path):
                 return JsonResponse({"error": "Invalid JSON data"}, status=400)
 
             logger.debug(f"📦 Request Body: {body_data}")  # Log request body
-            response = requests.post(fatsecret_url, json=body_data, headers=headers,timeout=20,allow_redirects=False  # ✅ Prevents unexpected redirects)
+            response = requests.post(fatsecret_url, json=body_data, headers=headers,timeout=20,allow_redirects=False)  # ✅ Prevents unexpected redirects)
 
         else:
             return JsonResponse({"error": "Only GET and POST requests are allowed"}, status=405)
