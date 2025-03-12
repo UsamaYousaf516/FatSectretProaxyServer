@@ -1,0 +1,17 @@
+# Virtual environment
+venv/
+env/
+
+# Byte-compiled / cached
+__pycache__/
+*.pyc
+*.pyo
+
+# Django specific
+db.sqlite3
+/media/
+staticfiles/
+
+# Environment variables
+.env
+ 
