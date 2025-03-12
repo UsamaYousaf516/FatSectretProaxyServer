@@ -129,5 +129,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 load_dotenv()
 
-FATSECRET_API_KEY = os.getenv("FATSECRET_API_KEY")
-FATSECRET_API_SECRET = os.getenv("FATSECRET_API_SECRET")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+
