@@ -72,7 +72,9 @@ def fatsecret_proxy(request, method_path):
             return JsonResponse({
                 "error": "FatSecret API Error",
                 "status_code": response.status_code,
-                "response": response.text
+                "response": response.text,
+                timeout=20,  # Avoids hanging requests
+                allow_redirects=False  # Prevents unexpected redirects
             }, status=response.status_code)
 
         return JsonResponse(response.json(), safe=False)
