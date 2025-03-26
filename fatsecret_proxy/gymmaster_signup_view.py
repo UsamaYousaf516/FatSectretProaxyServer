@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 def signup_member(request):
     """
-    Proxy view to handle GymMaster signup API.
+    Proxy view to handle GymMaster signup API (Multipart Form-Data with Profile Photo).
     """
     if request.method != "POST":
         logger.warning("🚨 Invalid request method: %s", request.method)
@@ -31,18 +31,25 @@ def signup_member(request):
         return JsonResponse({"error": "Server misconfiguration: Missing API Key"}, status=500)
 
     try:
-        # ✅ Get form data from the request body
-        form_data = request.POST.dict()  # Extract form data from request
-        form_data["api_key"] = GYMMASTER_API_KEY  # ✅ Add API key
+        # ✅ Extract form data
+        form_data = request.POST.dict()  # Extract form fields
+        form_data["api_key"] = GYMMASTER_API_KEY  # ✅ Add API Key
+
+        # ✅ Handle profile photo upload
+        files = {}
+        if "memberphoto" in request.FILES:
+            profile_photo = request.FILES["memberphoto"]
+            files["memberphoto"] = (profile_photo.name, profile_photo.file, profile_photo.content_type)
+            logger.debug("🖼️ Profile Photo: %s", profile_photo.name)
 
         logger.debug("📤 Forwarding signup request to GymMaster: %s", GYMMASTER_SIGNUP_URL)
-        logger.debug("📝 Payload: %s", form_data)
+        logger.debug("📝 Form Data: %s", form_data)
 
-        # ✅ Send the request to GymMaster
+        # ✅ Send Multipart request to GymMaster
         response = requests.post(
             GYMMASTER_SIGNUP_URL,
-            data=form_data,  # Sending form-data
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=form_data,  # Sending form fields
+            files=files,  # Sending file(s)
             timeout=15
         )
 
