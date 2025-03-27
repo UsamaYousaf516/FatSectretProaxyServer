@@ -1,4 +1,5 @@
 import requests
+import json
 import os
 import logging
 from django.http import JsonResponse
@@ -44,12 +45,19 @@ def gatekeeper_proxy(request, path):
 
     try:
         if request.method == "GET":
-            # ✅ Forward GET request
+            # ✅ Forward GET request (pass query parameters)
             response = requests.get(gymmaster_url, headers=headers, params=request.GET)
 
         elif request.method == "POST":
-            # ✅ Forward POST request (pass body data)
-            response = requests.post(gymmaster_url, headers=headers, json=request.POST.dict())
+            # ✅ Ensure request contains JSON
+            try:
+                request_data = json.loads(request.body)  # Parse JSON data
+            except json.JSONDecodeError:
+                logger.error("🚨 Invalid JSON format received")
+                return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
+            # ✅ Forward POST request (pass JSON body)
+            response = requests.post(gymmaster_url, headers=headers, json=request_data)
 
         else:
             return JsonResponse({"error": "Only GET and POST requests are allowed"}, status=405)
