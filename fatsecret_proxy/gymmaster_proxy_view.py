@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ✅ GymMaster API Base URL
-GYMMASTER_BASE_URL = "https://elitefitnessclub.gymmasteronline.com/portal/api/v1/"
+GYMMASTER_BASE_URL = "https://elitefitnessclub.gymmasteronline.com/portal/api/"
 GYMMASTER_API_KEY = os.getenv("GYMMASTER_MEMBER_API_KEY")
 
 if not GYMMASTER_API_KEY:
