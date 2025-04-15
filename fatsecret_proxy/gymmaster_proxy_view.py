@@ -1,4 +1,5 @@
 import requests
+import json
 import os
 import logging
 from django.http import JsonResponse
@@ -10,9 +11,7 @@ load_dotenv()
 
 # ✅ GymMaster API Base URL
 GYMMASTER_BASE_URL = "https://elitefitnessclub.gymmasteronline.com/portal/api/v1/"
-
-# ✅ GymMaster API Key
-GYMMASTER_API_KEY = os.getenv("GYMMASTER_MEMBER_API_KEY")  # Ensure this is set in .env
+GYMMASTER_API_KEY = os.getenv("GYMMASTER_MEMBER_API_KEY")
 
 if not GYMMASTER_API_KEY:
     raise ValueError("🚨 Missing GYMMASTER_MEMBER_API_KEY in .env")
@@ -25,49 +24,68 @@ logger = logging.getLogger(__name__)
 def gymmaster_proxy(request, path):
     """
     Universal Proxy View for GymMaster API
-    - Automatically appends `api_key`
-    - Supports dynamic paths (e.g., /member/profile, /member/membershiptypes)
-    - Handles both GET and POST requests
+    Dynamically adjusts Content-Type between JSON and FormData.
     """
 
-    # ✅ Construct full API URL
     gymmaster_url = f"{GYMMASTER_BASE_URL}{path}"
-    
-    # ✅ Add API key to request parameters
-    params = request.GET.dict() if request.method == "GET" else {}
-    params["api_key"] = GYMMASTER_API_KEY  # Always include API key
+    client_content_type = request.headers.get("Content-Type", "")
 
-    logger.debug("📤 Forwarding request to GymMaster: %s", gymmaster_url)
+    logger.debug("📤 Forwarding to GymMaster: %s", gymmaster_url)
+    logger.debug("💡 Client Content-Type: %s", client_content_type)
 
     try:
         if request.method == "GET":
-            # ✅ Forward GET request
+            # ✅ Always append API key for GET
+            params = request.GET.dict()
+            params["api_key"] = GYMMASTER_API_KEY
             response = requests.get(gymmaster_url, params=params)
 
         elif request.method == "POST":
-            # ✅ Forward POST request with form data
-            form_data = request.POST.dict()  # Extract form data
-            form_data["api_key"] = GYMMASTER_API_KEY  # ✅ Add API key
+            headers = {}
+            if "application/json" in client_content_type:
+                # ✅ JSON Handling
+                try:
+                    body_data = json.loads(request.body)
+                except json.JSONDecodeError:
+                    logger.error("🚨 Invalid JSON from client.")
+                    return JsonResponse({"error": "Invalid JSON format."}, status=400)
 
-            logger.debug("📝 Payload: %s", form_data)
+                body_data["api_key"] = GYMMASTER_API_KEY
+                headers["Content-Type"] = "application/json"
 
-            response = requests.post(
-                gymmaster_url,
-                data=form_data,
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                timeout=15
-            )
+                logger.debug("📝 JSON Payload: %s", body_data)
+
+                response = requests.post(
+                    gymmaster_url,
+                    json=body_data,
+                    headers=headers,
+                    timeout=15
+                )
+
+            else:
+                # ✅ Form-Data Handling
+                form_data = request.POST.dict()
+                form_data["api_key"] = GYMMASTER_API_KEY
+                headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+                logger.debug("📝 Form Payload: %s", form_data)
+
+                response = requests.post(
+                    gymmaster_url,
+                    data=form_data,
+                    headers=headers,
+                    timeout=15
+                )
 
         else:
             return JsonResponse({"error": "Only GET and POST requests are allowed"}, status=405)
 
-        # ✅ Log Response
+        # ✅ Log and return GymMaster's response
         logger.debug("📥 GymMaster Response Status: %d", response.status_code)
         logger.debug("📄 GymMaster Response Content: %s", response.text)
 
-        # ✅ Return GymMaster's JSON Response
         return JsonResponse(response.json(), safe=False, status=response.status_code)
 
     except requests.exceptions.RequestException as e:
-        logger.exception("🚨 Request to GymMaster failed")
+        logger.exception("🚨 Request to GymMaster failed.")
         return JsonResponse({"error": "Request failed", "details": str(e)}, status=500)
